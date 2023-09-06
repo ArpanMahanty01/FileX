@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Modal from 'react-modal';
 import { styled } from 'styled-components';
+import {io} from "socket.io-client"
 
 Modal.setAppElement('#root');
 

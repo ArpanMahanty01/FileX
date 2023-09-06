@@ -1,21 +1,26 @@
-require('dotenv').config({ path: '../env' });
+require('dotenv').config({ path: './../env' });
+const cors = require('cors');
 const express = require('express');
 const app = express();
+const dgram = require('dgram')
+app.use(cors());
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require('socket.io');
-const io = new Server(server);
+const io = new Server(server,{
+  cors: {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
 const multer = require('multer');
 const fetch = require('node-fetch');
 const fs = require('fs');
 const FormData = require('form-data');
 
-const cors = require('cors');
 const { getPrivateIP, getUserName } = require('./utils/utils');
 
-const corsOptions = {
-  origin: [`http://localhost:${process.env.FRONTEND_PORT}`],
-};
 
 const username = getUserName();
 const privateIp = getPrivateIP();
@@ -38,7 +43,6 @@ const Info = {
   username: getUserName(),
 };
 
-app.use(cors(corsOptions));
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -49,7 +53,7 @@ app.get('/', (req, res) => {
 io.on('connection', (s) => {
   s.on('findUser', () => {
     const socket = dgram.createSocket('udp4');
-    const broadcastPort = process.env.BROADCAST_PORT;
+    const broadcastPort = 41234;
     const message = JSON.stringify(Info);
     let activeReceivers = [];
 
@@ -126,7 +130,7 @@ io.on('connection', (s) => {
       );
     });
 
-    socket.bind(process.env.BROADCAST_PORT);
+    socket.bind(41234);
   });
 
   s.on('selectedSender', (senderDetails) => {
@@ -152,7 +156,7 @@ io.on('connection', (s) => {
             return;
           }
           formdata.append('file', data);
-          fetch(`http://${process.env.DATABASE_IP}:${process.env.DATABASE_PORT}/upload`,{
+          fetch(`http://10.81.46.38:8080/upload`,{
             method: 'POST',
             body: formdata,
             headers: formdata.getHeaders(),

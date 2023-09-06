@@ -8,7 +8,7 @@ function RecieveFile() {
   
   useEffect(() => {
     const socket = io('ws://localhost:8000', {
-      withCredentials: true,
+      withCredentials: false,
     });
 
     socket.on('senderReq',(details)=>{
