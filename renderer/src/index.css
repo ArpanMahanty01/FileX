@@ -1,0 +1,13 @@
+@font-face {
+  font-family: 'player'; 
+  src: url('./fonts/PressStart2P-Regular.ttf') format('truetype');
+}
+
+*,nav{
+  margin: 0;
+  padding: 0;
+  background-color: black;
+  color: white;
+  font-family: 'player';
+  overflow: hidden;
+}
