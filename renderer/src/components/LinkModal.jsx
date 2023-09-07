@@ -5,7 +5,7 @@ import {io} from "socket.io-client"
 
 Modal.setAppElement('#root');
 
-function LinkModal(props) {
+const LinkModal=(props)=> {
   const [link,setLink] = useState('');
   const path = props.path;
   const write = props.write;

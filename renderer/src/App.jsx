@@ -2,7 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 import Home from './pages/Home';
 import Navbar from './components/Navbar';
 import SendFile from './pages/SendFiles';
-import RecieveFile from './pages/RecieveFiles';
+import ReceiveFile from './pages/ReceiveFiles';
 import FindDevices from './pages/FindDevices';
 
 function App() {
@@ -18,7 +18,7 @@ function App() {
           <Route exact path="/" element={<Home />} />
           <Route path="/send" element={<SendFile />} />
           <Route path="/send/find-devices" element={<FindDevices />} />
-          <Route path="/recieve" element={<RecieveFile />} />
+          <Route path="/receive" element={<ReceiveFile />} />
         </Routes>
       </main>
     </div>

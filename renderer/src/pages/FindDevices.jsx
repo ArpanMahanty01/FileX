@@ -39,7 +39,7 @@ function FindDevices() {
     const socket = io(`ws://localhost:8000`, {
       withCredentials: true,
     });
-    socket.emit('selectedReciever',userDetails)
+    socket.emit('selectedReceiver',userDetails)
   };
 
   return (
@@ -49,7 +49,7 @@ function FindDevices() {
       <SelecUser>
         <h2>Active Receivers:</h2>
         <Ul>
-          {activeReceivers.map((recieve, index) => (
+          {activeReceivers.map((receive, index) => (
             <li key={index}>
               <Button
                 style={{
@@ -57,8 +57,8 @@ function FindDevices() {
                     ? '#00ff00'
                     : 'green',
                 }}
-                onClick={() => handleSelectedUser(recieve, index)}
-              >{`${recieve.username}`}</Button>
+                onClick={() => handleSelectedUser(receive, index)}
+              >{`${receive.username}`}</Button>
             </li>
           ))}
         </Ul>

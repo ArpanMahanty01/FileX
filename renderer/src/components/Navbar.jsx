@@ -6,7 +6,7 @@ function Navbar() {
   return (
     <Container>
         <StyledLink to='/send'>SEND</StyledLink>
-        <StyledLink to='/recieve'>RECIEVE</StyledLink>
+        <StyledLink to='/receive'>RECEIVE</StyledLink>
         <StyledLinkHome to='/'>HOME</StyledLinkHome>
     </Container>
   )
