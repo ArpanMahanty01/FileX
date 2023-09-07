@@ -49,9 +49,9 @@ const ShareModal = (props) => {
           body: JSON.stringify(data),
         }
       );
-      if(response.ok){
+      if (response.ok) {
         const responseBody = await response.text();
-        const linkWithoutQuotes =responseBody.replace(/^"(.*)"$/, '$1');
+        const linkWithoutQuotes = responseBody.replace(/^"(.*)"$/, '$1');
         setLink(linkWithoutQuotes);
       }
     } catch (err) {

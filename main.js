@@ -10,8 +10,8 @@ function createMainWindow() {
     title: 'FileWave',
     width: 1400,
     height: 800,
-    resizable:false,
-    icon:'./renderer/public/icon.png',
+    resizable: false,
+    icon: './renderer/public/icon.png',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: true,
@@ -47,5 +47,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
-

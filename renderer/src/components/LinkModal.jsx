@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import Modal from 'react-modal';
 import { styled } from 'styled-components';
-import {io} from "socket.io-client"
+import { io } from 'socket.io-client';
 
 Modal.setAppElement('#root');
 
-const LinkModal=(props)=> {
-  const [link,setLink] = useState('');
+const LinkModal = (props) => {
+  const [link, setLink] = useState('');
   const path = props.path;
   const write = props.write;
   const handleCopyClick = async () => {
@@ -17,16 +17,16 @@ const LinkModal=(props)=> {
     }
   };
 
-  const handleGenerateLink = ()=>{
+  const handleGenerateLink = () => {
     const socket = io(`ws://localhost:8000`, {
       withCredentials: true,
     });
     const data = {
-      path:path,
-      write:write
-    }
-    socket.emit('generate-link',(data))
-  }
+      path: path,
+      write: write,
+    };
+    socket.emit('generate-link', data);
+  };
 
   return (
     <StyledModal
@@ -37,16 +37,16 @@ const LinkModal=(props)=> {
       <ModalDiv>
         <ModalLabel>LINK</ModalLabel>
         <ModalInput type="text" value={link} readOnly />
-        {
-          link.length===0? null :<CopyLink onClick={handleCopyClick}>Copy</CopyLink>
-        }
+        {link.length === 0 ? null : (
+          <CopyLink onClick={handleCopyClick}>Copy</CopyLink>
+        )}
       </ModalDiv>
-      
+
       <Generate onClick={handleGenerateLink}>Generate</Generate>
       <CloseBtn onClick={props.closeModal}>Close</CloseBtn>
     </StyledModal>
   );
-}
+};
 
 const StyledModal = styled(Modal)`
   background-color: black;
@@ -97,7 +97,7 @@ const CloseBtn = styled.button`
 `;
 
 const Generate = styled.button`
-   background-color: green;
+  background-color: green;
   width: 40%;
   text-align: center;
   margin: 20px;
@@ -105,10 +105,9 @@ const Generate = styled.button`
   &:hover {
     transform: scale(1.1);
   }
-`
+`;
 const ModalLabel = styled.div`
   margin: 5px;
 `;
-
 
 export default LinkModal;

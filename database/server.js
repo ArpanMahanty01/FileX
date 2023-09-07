@@ -1,12 +1,15 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const app = express();
 const cors = require('cors');
-const Datauri = require('datauri');
 const mime = require('mime');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
+
+const PORT = process.env.DATABASE_PORT || 8080;
+const DATABASE_IP = process.env.DATABASE_IP;
 
 app.use(cors());
 app.use(express.json());
@@ -149,22 +152,21 @@ app.post('/generate-link/:id', (req, res) => {
         console.error('Error writing the file:', writeError);
       } else {
         console.log('New data added to the JSON file successfully.');
-        const link = `http://10.21.4.73:8080/share/${req.body.user}/${newData._id}`;
+        const link = `http://${DATABASE_IP}:${process.env.DATABASE_PORT}/share/${req.body.user}/${newData._id}`;
         console.log(link);
         res.json(link);
       }
     });
-  })
-    
+  });
 });
 
-app.post("/share/:user/:id",(req,res)=>{
+app.post('/share/:user/:id', (req, res) => {
   const client = req.body;
   console.log(client);
   const user = req.params.user;
   const id = req.params.id;
-  const filePath = path.join(__dirname,'uploads',user,'.X');
-  fs.readFile(filePath,'utf-8',(err,data)=>{
+  const filePath = path.join(__dirname, 'uploads', user, '.X');
+  fs.readFile(filePath, 'utf-8', (err, data) => {
     if (err) {
       console.error('Error reading the JSON file:', err);
       return;
@@ -173,26 +175,25 @@ app.post("/share/:user/:id",(req,res)=>{
     const dataArray = JSON.parse(data);
     const matchingObject = dataArray.find((obj) => obj._id === id);
     if (matchingObject) {
-      const filePath = matchingObject.filePath
-      if(!matchingObject.allowed_clients){
+      const filePath = matchingObject.filePath;
+      if (!matchingObject.allowed_clients) {
         //respond positively
-        console.log('request accepted')
-        fs.readdir(filePath,(err,files)=>{
-          if(err){
-            console.log('Error reading directory',err)
+        console.log('request accepted');
+        fs.readdir(filePath, (err, files) => {
+          if (err) {
+            console.log('Error reading directory', err);
           }
-          try{
-
+          try {
             const contents = fs.readdirSync(filePath);
-            const result=[];
-            
-            contents.forEach((item)=>{
-              const itemPath = path.join(filePath,item);
-              const isDirectory=fs.statSync(itemPath).isDirectory();
+            const result = [];
+
+            contents.forEach((item) => {
+              const itemPath = path.join(filePath, item);
+              const isDirectory = fs.statSync(itemPath).isDirectory();
               const fileType = isDirectory
-              ? 'directory'
-              : path.extname(item).substring(1);
-              
+                ? 'directory'
+                : path.extname(item).substring(1);
+
               result.push({
                 filename: item,
                 type: isDirectory ? 'directory' : fileType,
@@ -200,15 +201,15 @@ app.post("/share/:user/:id",(req,res)=>{
               });
             });
             res.status(200).send(result);
-          }catch(error){
-            console.error('Error listing directory contents',error);
+          } catch (error) {
+            console.error('Error listing directory contents', error);
             res.status(500).send([]);
           }
-          })
-      }else if(matchingObject.allowed_clients.includes(client)){
+        });
+      } else if (matchingObject.allowed_clients.includes(client)) {
         //!!!!!!!!!!!!!!!!!respond positively
-        console.log('request accepted')
-      }else{
+        console.log('request accepted');
+      } else {
         console.log('unauthorized');
         res.status(500).send([]);
       }
@@ -216,9 +217,9 @@ app.post("/share/:user/:id",(req,res)=>{
       res.status(500).send([]);
       console.log('No matching object found.');
     }
-  })
-})
+  });
+});
 
-app.listen(8080, () => {
-  console.log('database active at 8080');
+app.listen(PORT, () => {
+  console.log(`database active at ${PORT}`);
 });

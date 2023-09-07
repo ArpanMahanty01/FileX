@@ -48,5 +48,4 @@ const Circle = styled.div`
   }
 `;
 
-
 export default RippleAnimation;

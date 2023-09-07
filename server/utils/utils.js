@@ -7,7 +7,6 @@ exports.getPrivateIP = () => {
 };
 
 exports.getUserName = () => {
-
-    const username = os.userInfo().username;
-    return username;
+  const username = os.userInfo().username;
+  return username;
 };

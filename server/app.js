@@ -1,4 +1,4 @@
-require('dotenv').config({ path: './../env' });
+require('dotenv').config();
 const cors = require('cors');
 const express = require('express');
 const app = express();
@@ -16,9 +16,14 @@ app.use(cors());
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require('socket.io');
+const FRONTEND_PORT = process.env.FRONTEND_PORT || 3000;
+const DATABASE_PORT = process.env.DATABASE_PORT || 8080;
+const DATABASE_IP = process.env.DATABASE_IP;
+const BROADCAST_PORT = process.env.BROADCAST_PORT;
+const SOCKET_IO_PORT = process.env.SOCKET_IO_PORT;
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: `http://localhost:${FRONTEND_PORT}`,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -33,6 +38,7 @@ const username = getUserName();
 const privateIp = getPrivateIP();
 
 const uploadDirectory = '~/FileX/';
+
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -59,7 +65,8 @@ app.get('/', (req, res) => {
 io.on('connection', (s) => {
   s.on('findUser', () => {
     const socket = dgram.createSocket('udp4');
-    const broadcastPort = 41234;
+    const BROADCAST_PORT = process.env.BROADCAST_PORT || 41234;
+    const BROADCAST_IP = process.env.BROADCAST_IP;
     const message = JSON.stringify(Info);
     let activeReceivers = [];
 
@@ -71,8 +78,8 @@ io.on('connection', (s) => {
           message,
           0,
           message.length,
-          broadcastPort,
-          '10.21.7.255',
+          BROADCAST_PORT,
+          BROADCAST_IP,
           (err) => {
             if (err) {
               console.error('Error sending message:', err);
@@ -102,7 +109,7 @@ io.on('connection', (s) => {
   });
 
   s.on('selectedReceiver', (receiverDetails) => {
-    fetch(`http://${receiverDetails.ip}:8000/receiver/acceptReq`, {
+    fetch(`http://${receiverDetails.ip}:${SOCKET_IO_PORT}/receiver/acceptReq`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -141,14 +148,14 @@ io.on('connection', (s) => {
       );
     });
 
-    socket.bind(41234);
+    socket.bind(BROADCAST_PORT);
   });
 
   s.on('selectedSender', async (senderDetails) => {
     console.log(senderDetails);
     try {
       const response = await fetch(
-        `http://${senderDetails.senderIP}:8000/sender/accepted`,
+        `http://${senderDetails.senderIP}:${SOCKET_IO_PORT}/sender/accepted`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -189,13 +196,13 @@ io.on('connection', (s) => {
         return;
       }
       formdata.append('file', data);
-      fetch(`http://10.21.4.73:8080/upload`, {
+      fetch(`http://${BROADCAST_IP}:${DATABASE_PORT}/upload`, {
         method: 'POST',
         body: formdata,
         headers: formdata.getHeaders(),
       }).then((response) => {
         s.emit('link', {
-          link: `http://10.21.4.73:8080/download/${response.filename}`,
+          link: `http://${BROADCAST_IP}:${DATABASE_PORT}/download/${response.filename}`,
         });
       });
     });
@@ -235,7 +242,7 @@ io.on('connection', (s) => {
       const buffer = Buffer.from(data, 'utf-8');
       const str = buffer.toString('utf-8');
       console.log(str);
-      s.emit('user',str)
+      s.emit('user', str);
     });
   });
 
@@ -246,7 +253,7 @@ io.on('connection', (s) => {
       const formData = new FormData();
       formData.append('file', fileStream);
       const response = await fetch(
-        `http:localhost:8080/upload/${data.user}?db_path=${data.db_path}`,
+        `http:${DATABASE_IP}:${DATABASE_PORT}/upload/${data.user}?db_path=${data.db_path}`,
         {
           method: 'POST',
           body: formData,
@@ -306,6 +313,6 @@ io.on('connection', (s) => {
   });
 });
 
-server.listen(8000, () => {
-  console.log('listening on :8000');
+server.listen(SOCKET_IO_PORT, () => {
+  console.log(`listening on : ${SOCKET_IO_PORT}`);
 });

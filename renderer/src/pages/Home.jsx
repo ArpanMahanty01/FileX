@@ -153,10 +153,10 @@ const Home = () => {
         {fileContent && (
           <FileViewer fileType={selectedFile} filePath={fileContent} />
         )}
-        {files.map((file) => (
-          <>
+        {files.map((file,index) => (
+          <FileContainer>
             <Files
-              key={file.path}
+              key={index}
               type={file.type}
               onClick={() => {
                 handleFileClick(file);
@@ -166,7 +166,7 @@ const Home = () => {
             </Files>
             <Download onClick={() => handleDownload(file)}>Download</Download>
             <Share onClick={()=>handleShare(file.path)}>Share</Share>
-          </>
+          </FileContainer>
         ))}
       </FileExplorer>
       <ShareModal isOpen={isModalOpen} onRequestClose={closeModal} sharePath={sharePath} user={user}/>
@@ -195,7 +195,7 @@ const Username = styled.div`
 
 const Nav = styled.div`
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
 `;
 
@@ -208,6 +208,7 @@ const FileExplorer = styled.ul`
   flex-direction: column;
   margin-top: 20px;
   align-items: center;
+  justify-content: center;
 `;
 
 const Files = styled.li`
@@ -240,10 +241,26 @@ const Buttons = styled.div`
 
 const Upload = styled.button`
   height: 5vh;
+  margin-right: 5px;
+  padding: 5px;
+  &:hover{
+    background-color: #00ff00;
+    color: black;
+  }
 `;
 
 const Share = styled.button`
   height: 5vh;
+  margin-left: 5px;
+  padding: 5px;
+  &:hover{
+    background-color: blue;
+  }
 `;
+
+const FileContainer = styled.div`
+  width: 100%;
+  display: flex;
+`
 
 export default Home;
