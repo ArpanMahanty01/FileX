@@ -3,8 +3,6 @@ import {styled} from 'styled-components';
 import { io } from 'socket.io-client';
 import Breadcrumbs from '../components/Breadcrumbs';
 import FileViewer from 'react-file-viewer';
-import shareImage from '../assets/share.png';
-import uploadImage from '../assets'
 
 const Home = () => {
   const [user,setUser] = useState('');
@@ -101,7 +99,7 @@ const Home = () => {
       <Nav>
       <Breadcrumbs path={currentPath} onBreadcrumbClick={setCurrentPath} setHome={setHome}/>
       <Buttons>
-      <Upload onClick={handleUpload}>Upload</Upload>
+      <Upload onClick={handleUpload}>upload</Upload>
       <Share>share</Share>
       </Buttons>
       </Nav>
@@ -114,10 +112,12 @@ const Home = () => {
         )}
        {
         files.map((file)=>(
+          <>
           <Files key={file.path} type={file.type} onClick={()=>{handleFileClick(file)}}>
            <div>{file.filename}</div>
-           <Download onClick={()=>handleDownload(file)}>Download</Download>
           </Files>
+           <Download onClick={()=>handleDownload(file)}>Download</Download>
+          </>
         ))
        }
       </FileExplorer>
@@ -190,10 +190,14 @@ const Buttons = styled.div`
 `;
 
 const Upload = styled.button`
+height: 5vh;
+
 `;
 
 const Share = styled.button`
-  
-`
+height: 5vh;
+`;
+
+
 
 export default Home;

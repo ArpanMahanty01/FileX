@@ -107,20 +107,25 @@ io.on('connection', (s) => {
         senderIP: privateIp,
         path: recieverDetails.path,
         recieverIP: recieverDetails.recieverIP,
+        recieverName:recieverDetails.username,
+        write:recieverDetails.write
       }),
     });
   });
 
   s.on('getActive', () => {
     const socket = dgram.createSocket('udp4');
+    const recieverInfo={
+      username:username,
+      ip:privateIp
+    }
     socket.on('message', (message, remote) => {
       try {
         const senderInfo = JSON.parse(message);
         console.log(`Received broadcast from sender (${senderInfo.ip})`);
-
         const response = JSON.stringify(recieverInfo);
         socket.send(response, remote.port, remote.address);
-      } catch {
+      } catch(error) {
         console.error('error parsing', error);
       }
     });
@@ -134,18 +139,35 @@ io.on('connection', (s) => {
     socket.bind(41234);
   });
 
-  s.on('selectedSender', (senderDetails) => {
-    fetch(`http://${senderDetails.senderIP}:8000/sender/accepted`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        senderName: username,
-        senderIP: senderDetails.senderIP,
-        path: senderDetails.filePath,
-        recieverIP: privateIp,
-      }),
-    });
+  s.on('selectedSender',async (senderDetails) => {
+    console.log(senderDetails);
+    try{
+      const response = await fetch(`http://${senderDetails.senderIP}:8000/sender/accepted`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(senderDetails),
+      });
+      if(response.ok){
+        const contentDispositionHeader = response.headers.get('content-disposition');
+        let filename = 'downloadedFile.txt';
+        if (contentDispositionHeader) {
+          const matches = contentDispositionHeader.match(/filename="(.+)"/);
+          if (matches) {
+            filename = matches[1];
+          }
+        }
+        const fileStream = fs.createWriteStream('~/Downloads/');
+        response.body.pipe(fileStream);
+        fileStream.on('finish', () => {
+          console.log(`File ${filename} downloaded successfully.`);
+        });
+      }else{
+        console.error('error downloading file')
+      }
+    }catch(error){
+      console.log(error)
+    }
   });
 
   s.on('generate-link', (details) => {
@@ -193,7 +215,7 @@ io.on('connection', (s) => {
 
 app.post('/reciever/acceptReq', (req, res) => {
   const details = req.body;
-  io.on('connectoin', (s) => {
+  io.on('connection', (s) => {
     s.emit('senderReq', details);
   });
 });
@@ -204,26 +226,27 @@ app.post('/sender/accepted', (req, res) => {
   const formData = new FormData();
   const filePath = details.path;
   console.log(`${details.recieverIP} accepted the offer`);
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      console.error('Error reading file:', err);
-      return;
-    }
-    formData.append('file', data);
+  // fs.readFile(filePath, (err, data) => {
+  //   if (err) {
+  //     console.error('Error reading file:', err);
+  //     return;
+  //   }
+  //   formData.append('file', data);
 
-    fetch(`http://${details.recieverIP}/reciever/upload`, {
-      method: 'POST',
-      body: formData,
-      headers: formData.getHeaders(),
-    })
-      .then((response) => response.text())
-      .then((result) => {
-        console.log(result);
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-  });
+  //   fetch(`http://${details.recieverIP}/reciever/upload`, {
+  //     method: 'POST',
+  //     body: formData,
+  //     headers: formData.getHeaders(),
+  //   })
+  //     .then((response) => response.text())
+  //     .then((result) => {
+  //       console.log(result);
+  //     })
+  //     .catch((error) => {
+  //       console.error('Error:', error);
+  //     });
+  // });
+  res.sendFile(filePath);
 });
 
 app.post('/reciever/upload', upload.single('file'), (req, res) => {
