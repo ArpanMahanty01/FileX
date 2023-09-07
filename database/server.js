@@ -1,95 +1,98 @@
-require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
-const multer = require('multer');
 const path = require('path');
-
+const fs = require('fs');
 const app = express();
-const port = 8080;
+const cors = require('cors');
+const Datauri = require('datauri');
+const mime = require('mime');
 
-mongoose.connect(
-  'mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.10.6/files',
-  {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  }
-);
+app.use(cors());
 
-const conn = mongoose.connection;
-
-conn.on('error', (err) => {
-  console.error('MongoDB connection error:', err);
-});
-
-conn.once('open', () => {
-  console.log('Connected to MongoDB');
-});
-
-const FileSchema = new mongoose.Schema({
-  filename: String,
-  path: String,
-  originalname: String,
-  mimetype: String,
-  size: Number,
-});
-
-const File = mongoose.model('File', FileSchema);
-
-const storage = multer.diskStorage({
-  destination: 'uploads/', 
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname)
-    );
-  },
-});
-
-const upload = multer({ storage });
-
-app.post('/upload', upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded.' });
+app.get('/getFiles/:id', (req, res) => {
+  console.log('request recieved');
+  const name = req.params.id;
+  const filepath = req.query.path;
+  const uploadsPath = path.join(__dirname, 'uploads');
+  fs.readdir(uploadsPath, (err, files) => {
+    if (err) {
+      console.error('Error reading directory:', err);
     }
+    if (files.includes(name)) {
+      const directoryPath = path.join(uploadsPath, name, filepath);
+      try {
+        const contents = fs.readdirSync(directoryPath);
+        const result = [];
 
-    const { filename, path, originalname, mimetype, size } = req.file;
+        contents.forEach((item) => {
+          const itemPath = path.join(directoryPath, item);
+          const isDirectory = fs.statSync(itemPath).isDirectory();
+          const fileType = isDirectory
+            ? 'directory'
+            : path.extname(item).substring(1);
 
-    const fileRecord = new File({
-      filename,
-      path,
-      originalname,
-      mimetype,
-      size,
-    });
+          result.push({
+            filename: item,
+            type: isDirectory ? 'directory' : fileType,
+            path: itemPath,
+          });
+        });
 
-    await fileRecord.save();
-
-    res.status(201).json({ message: 'File uploaded successfully.' });
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    res.status(500).json({ message: 'Internal server error.' });
-  }
-});
-
-app.get('/download/:filename', async (req, res) => {
-  try {
-    const filename = req.params.filename;
-
-    const fileRecord = await File.findOne({ filename });
-
-    if (!fileRecord) {
-      return res.status(404).json({ message: 'File not found.' });
+        res.status(200).send(result);
+      } catch (error) {
+        console.error('Error listing directory contents:', error);
+        res.status(500).send([]);
+      }
+    } else {
+      const directoryPath = path.join(uploadsPath, name);
+      fs.mkdir(directoryPath, (err) => {
+        if (err) {
+          if (err.code === 'EEXIST') {
+            console.error('The directory already exists.');
+          } else {
+            console.error(`Error creating the directory: ${err}`);
+          }
+        } else {
+          console.log('directory created successfully.');
+          res.send([]);
+        }
+      });
     }
+  });
+});
 
-    res.download(fileRecord.path, fileRecord.originalname);
-  } catch (error) {
-    console.error('Error downloading file:', error);
-    res.status(500).json({ message: 'Internal server error.' });
+app.get('/serveFile/:id/', (req, res) => {
+  const name = req.params.id;
+  const Path = req.query.path;
+  const filename = req.query.filename;
+  const uploadsPath = path.join(__dirname, 'uploads');
+  const filePath = path.join(uploadsPath, name, Path, filename);
+  try {
+    const mimeType = mime.getType(filePath);
+    if (fs.existsSync(filePath)) {
+      res.setHeader('Content-Type',mimeType);
+  
+      const dataStream = fs.createReadStream(filePath);
+      dataStream.pipe(res);
+    } else {
+      res.status(404).send('Image not found');
+    }
+  } catch (err) {
+    console.error('Error reading or sending file:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
+app.post('/upload',(req,res)=>{
+  
+});
+
+app.get('/download/:id',(req,res)=>{
+  console.log('download request recieved')
+  const Path = req.query.path;
+  const filename = req.query.filename;
+  res.download(Path,filename);
+})
+
+app.listen(8080, () => {
+  console.log('database active at 8080');
 });

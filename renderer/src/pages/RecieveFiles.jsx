@@ -17,6 +17,15 @@ function RecieveFile() {
   
   }, []);
 
+  const socket = io('ws://localhost:8000', {
+      withCredentials: false,
+    });
+    socket.on('senderReq',(details)=>{
+      console.log('details')
+      setActiveReq(prev=>[...prev,details])
+  })
+  
+
   const handleSelectedSender = (sender)=>{
     const socket = io('ws://localhost:8000', {
       withCredentials: true,

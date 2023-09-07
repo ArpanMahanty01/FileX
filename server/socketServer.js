@@ -2,12 +2,16 @@ require('dotenv').config({ path: './../env' });
 const cors = require('cors');
 const express = require('express');
 const app = express();
-const dgram = require('dgram')
+const dgram = require('dgram');
+const fs = require('fs');
+const os = require('os');
+const Path = require('path')
+const { uniqueNamesGenerator, adjectives, colors, names } = require('unique-names-generator');
 app.use(cors());
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require('socket.io');
-const io = new Server(server,{
+const io = new Server(server, {
   cors: {
     origin: 'http://localhost:3000',
     methods: ['GET', 'POST'],
@@ -16,25 +20,23 @@ const io = new Server(server,{
 });
 const multer = require('multer');
 const fetch = require('node-fetch');
-const fs = require('fs');
 const FormData = require('form-data');
 
 const { getPrivateIP, getUserName } = require('./utils/utils');
 
-
 const username = getUserName();
 const privateIp = getPrivateIP();
 
-const uploadDirectory = '~/FileX/' 
+const uploadDirectory = '~/FileX/';
 
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadDirectory);
-    },
-    filename: (req, file, cb) => {
-      cb(null, file.originalname);
-    },
-  });
+  destination: (req, file, cb) => {
+    cb(null, uploadDirectory);
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
 
 const upload = multer({ storage: storage });
 
@@ -48,7 +50,6 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.send('server running');
 });
-
 
 io.on('connection', (s) => {
   s.on('findUser', () => {
@@ -66,7 +67,7 @@ io.on('connection', (s) => {
           0,
           message.length,
           broadcastPort,
-          '10.42.0.255',
+          '10.21.7.255',
           (err) => {
             if (err) {
               console.error('Error sending message:', err);
@@ -96,7 +97,7 @@ io.on('connection', (s) => {
   });
 
   s.on('selectedReciever', (recieverDetails) => {
-    fetch(`http://${recieverDetails.ip}:8000/reciver/acceptReq`, {
+    fetch(`http://${recieverDetails.ip}:8000/reciever/acceptReq`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -104,8 +105,8 @@ io.on('connection', (s) => {
       body: JSON.stringify({
         senderName: username,
         senderIP: privateIp,
-        path: fullDetails.filePath,
-        recieverIP: fullDetails.recieverIP,
+        path: recieverDetails.path,
+        recieverIP: recieverDetails.recieverIP,
       }),
     });
   });
@@ -134,34 +135,58 @@ io.on('connection', (s) => {
   });
 
   s.on('selectedSender', (senderDetails) => {
-    fetch(`http://${senderDetails.senderIp}:8000/sender/accepted`, {
+    fetch(`http://${senderDetails.senderIP}:8000/sender/accepted`, {
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         senderName: username,
-        senderIP: privateIp,
-        path: fullDetails.filePath,
-        recieverIP: fullDetails.recieverIP,
+        senderIP: senderDetails.senderIP,
+        path: senderDetails.filePath,
+        recieverIP: privateIp,
       }),
     });
   });
 
-  s.on('generate-link',(details)=>{
+  s.on('generate-link', (details) => {
     const filePath = details.path;
     const formdata = new FormData();
-    fs.readFile(filePath,(err,data)=>{
-        if (err) {
-            console.error('Error reading file:', err);
-            return;
-          }
-          formdata.append('file', data);
-          fetch(`http://10.81.46.38:8080/upload`,{
-            method: 'POST',
-            body: formdata,
-            headers: formdata.getHeaders(),
-    })
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        console.error('Error reading file:', err);
+        return;
+      }
+      formdata.append('file', data);
+      fetch(`http://10.21.4.73:8080/upload`, {
+        method: 'POST',
+        body: formdata,
+        headers: formdata.getHeaders(),
+      }).then((response) => {
+        s.emit('link', {
+          link: `http://10.21.4.73:8080/download/${response.filename}`,
+        });
+      });
+    });
+  });
 
+  s.on('init',()=>{
+    const homeDirectory = os.homedir();
+    const hiddenFilePath = Path.join(homeDirectory, '.X');
+    fs.access(hiddenFilePath,fs.constants.F_OK,(err)=>{
+      if(err){
+        const randomName = uniqueNamesGenerator({ dictionaries: [adjectives, colors, names] });
+        const lineToAdd = randomName;
+        fs.writeFileSync(hiddenFilePath, lineToAdd, 'utf8');
+        console.log(`.X created with the name: ${lineToAdd}`);
+        s.emit('user',randomName);
+      }
+      fs.readFile(hiddenFilePath,'utf8',(err,data)=>{
+        if(err){
+          console.error("Error reading the hidden file",err)
+        }else{
+          s.emit('user',data)
+        }
+      })
     })
   })
 });
@@ -175,8 +200,10 @@ app.post('/reciever/acceptReq', (req, res) => {
 
 app.post('/sender/accepted', (req, res) => {
   const details = req.body;
+  console.log(details);
   const formData = new FormData();
   const filePath = details.path;
+  console.log(`${details.recieverIP} accepted the offer`);
   fs.readFile(filePath, (err, data) => {
     if (err) {
       console.error('Error reading file:', err);
@@ -199,13 +226,12 @@ app.post('/sender/accepted', (req, res) => {
   });
 });
 
-app.post('/reciever/upload',upload.single('file'),(req,res)=>{
-    if (!req.file) {
-        return res.status(400).send('No file uploaded.');
-      }
-      res.send('File uploaded successfully.');      
-})
-
+app.post('/reciever/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded.');
+  }
+  res.send('File uploaded successfully.');
+});
 
 server.listen(8000, () => {
   console.log('listening on :8000');
