@@ -29,7 +29,7 @@ FileX uses a lot of tech to work efficiently and effectively:
 - [node.js](https://github.com/nodejs)- evented I/O for the backend
 - [Express](https://github.com/expressjs/express) - fast node.js network app framework 
 - [Multer](https://www.npmjs.com/package/multer) - middleware  primarily used for uploading files 
-- Used core node modules like fs , deground etc
+- Used core node modules like fs , dgram etc
 
 
 
